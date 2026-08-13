@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RadarDePreço • Detector de Ofertas Reais</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-body: #0b0f19;
+      --bg-surface: #111827;
+      --bg-card: #1f2937;
+      --bg-card-hover: #263344;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: #3b82f6;
+
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.25);
+      
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+      
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.15);
+      
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 1.25rem;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* Quick Selector Tags */
+    .quick-tags {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .tag-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .tag-btn:hover {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tag-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    /* Search & Selector Bar */
+    .search-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0.75rem;
+      display: flex;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .select-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .select-wrapper i {
+      position: absolute;
+      left: 1rem;
+      color: var(--text-subtle);
+      font-size: 1.25rem;
+      pointer-events: none;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.95rem 1rem 0.95rem 2.8rem;
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus {
+      border-color: var(--border-focus);
+    }
+
+    .btn-analisar {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 0 1.75rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-analisar:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+
+    /* Dashboard Result Card */
+    .dashboard-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Product Header */
+    .product-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .product-meta h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .product-category {
+      display: inline-block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-subtle);
+      margin-bottom: 0.25rem;
+    }
+
+    .claimed-tag {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Verdict Alert */
+    .verdict-alert {
+      padding: 1.25rem;
+      border-radius: 14px;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      border: 1px solid transparent;
+    }
+
+    .verdict-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .verdict-content h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .verdict-content p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Verdict Variations */
+    .alert-good {
+      background: var(--success-glow);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+    .alert-good h3 { color: #34d399; }
+    .alert-good p { color: #a7f3d0; }
+
+    .alert-fake {
+      background: var(--danger-glow);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .alert-fake h3 { color: #f87171; }
+    .alert-fake p { color: #fecaca; }
+
+    .alert-neutral {
+      background: var(--warning-glow);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fde68a;
+    }
+    .alert-neutral h3 { color: #fbbf24; }
+    .alert-neutral p { color: #fef3c7; }
+
+    /* Stat Cards Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-top: 0.5rem;
+      color: var(--text-main);
+    }
+
+    .stat-current .stat-number {
+      color: #60a5fa;
+    }
+
+    /* Chart Section */
+    .chart-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .chart-header h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 280px;
+      width: 100%;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 1.5rem 1rem; }
+      header h1 { font-size: 2rem; }
+      .search-card { flex-direction: column; }
+      .btn-analisar { padding: 0.85rem; justify-content: center; }
+      .dashboard-card { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <header>
+      <div class="brand-badge">
+        <i class="ph-bold ph-shield-check"></i> Análise de Preço Inteligente
+      </div>
+      <h1>Desconto Real ou Golpe?</h1>
+      <p>Monitore o histórico e fuja de falsas promoções do tipo "metade do dobro".</p>
+
+      <div class="quick-tags">
+        <button class="tag-btn active" onclick="selecionarPorTag('tv50', this)">
+          <i class="ph ph-television"></i> Smart TV 50"
+        </button>
+        <button class="tag-btn" onclick="selecionarPorTag('fone-anc', this)">
+          <i class="ph ph-headphones"></i> Fone Bluetooth
+        </button>
+        <button class="tag-btn" onclick="selecionarPorTag('monitor-gamer', this)">
+          <i class="ph ph-monitor"></i> Monitor Gamer 144Hz
+        </button>
+        <button class="tag-btn" onclick="selecionarPorTag('airfryer', this)">
+          <i class="ph ph-cooking-pot"></i> Fritadeira Air Fryer
+        </button>
+      </div>
+    </header>
+
+    <section class="search-card">
+      <div class="select-wrapper">
+        <i class="ph ph-magnifying-glass"></i>
+        <select id="productSelect" onchange="sincronizarTags()">
+          <option value="tv50">Smart TV 50" 4K UHD Crystal (Golpe Detectado)</option>
+          <option value="fone-anc">Fone Bluetooth Pro ANC (Desconto Autêntico)</option>
+          <option value="monitor-gamer">Monitor Gamer 24" IPS 144Hz (Preço Comum)</option>
+          <option value="airfryer">Fritadeira Elétrica Air Fryer 4L (Desconto Médio)</option>
+        </select>
+      </div>
+      <button class="btn-analisar" onclick="executarAnalise()">
+        <span>Verificar</span>
+        <i class="ph-bold ph-arrow-right"></i>
+      </button>
+    </section>
+
+    <main class="dashboard-card" id="dashboard">
+      
+      <div class="product-meta">
+        <div>
+          <span class="product-category" id="prodCategory">Eletrônicos</span>
+          <h2 id="prodTitle">Smart TV 50" 4K UHD</h2>
+        </div>
+        <div class="claimed-tag" id="prodClaimed">
+          <i class="ph-bold ph-tag"></i> <span id="prodClaimedText">45% OFF Anunciado</span>
+        </div>
+      </div>
+
+      <div class="verdict-alert alert-fake" id="verdictBox">
+        <div class="verdict-icon" id="verdictIcon">
+          <i class="ph-fill ph-warning-octagon"></i>
+        </div>
+        <div class="verdict-content">
+          <h3 id="verdictTitle">Alerta: Metade do Dobro!</h3>
+          <p id="verdictDesc">O valor subiu 35% nos últimos 15 dias para simular uma grande promoção hoje.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card stat-current">
+          <div class="stat-title">
+            <i class="ph ph-currency-circle-dollar"></i> Preço Atual
+          </div>
+          <div class="stat-number" id="valCurrent">R$ 2.199</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">
+            <i class="ph ph-trend-down"></i> Menor Histórico
+          </div>
+          <div class="stat-number" id="valMin">R$ 2.050</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">
+            <i class="ph ph-chart-bar"></i> Média (90 dias)
+          </div>
+          <div class="stat-number" id="valAvg">R$ 2.120</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">
+            <i class="ph ph-trend-up"></i> Pico Inflacionado
+          </div>
+          <div class="stat-number" id="valMax">R$ 2.899</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="chart-header">
+          <h4><i class="ph ph-chart-line-up"></i> Curva de Preço (Últimos 6 meses)</h4>
+          <span style="font-size: 0.8rem; color: var(--text-subtle);">Atualizado hoje</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="chartCanvas"></canvas>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    // Base de dados mockada com histórico representativo
+    const MOCK_DB = {
+      "tv50": {
+        nome: 'Smart TV 50" 4K UHD Crystal HDR',
+        categoria: 'Televisores & Home Theater',
+        descontoAnunciado: '45% OFF',
+        datas: ['01 Mai', '20 Mai', '10 Jun', '01 Jul', '20 Jul', '05 Ago', 'Hoje'],
+        precos: [2100, 2120, 2050, 2750, 2899, 2899, 2199] // Inflacionou antes da 'oferta'
+      },
+      "fone-anc": {
+        nome: 'Fone de Ouvido Sem Fio Pro ANC Noise Cancelling',
+        categoria: 'Áudio & Acessórios',
+        descontoAnunciado: '40% OFF',
+        datas: ['01 Mai', '20 Mai', '10 Jun', '01 Jul', '20 Jul', '05 Ago', 'Hoje'],
+        precos: [450, 439, 460, 440, 430, 435, 279] // Queda real abaixo da mínima
+      },
+      "monitor-gamer": {
+        nome: 'Monitor Gamer 24" 144Hz 1ms FreeSync IPS',
+        categoria: 'Informática & Setup',
+        descontoAnunciado: '50% OFF',
+        datas: ['01 Mai', '20 Mai', '10 Jun', '01 Jul', '20 Jul', '05 Ago', 'Hoje'],
+        precos: [890, 899, 875, 890, 885, 899, 879] // Flutuação normal maquiada
+      },
+      "airfryer": {
+        nome: 'Fritadeira Elétrica Digital Air Fryer Touch 4L',
+        categoria: 'Eletroportáteis',
+        descontoAnunciado: '20% OFF',
+        datas: ['01 Mai', '20 Mai', '10 Jun', '01 Jul', '20 Jul', '05 Ago', 'Hoje'],
+        precos: [380, 390, 375, 380, 370, 365, 329] // Desconto moderado honesto
+      }
+    };
+
+    let chartInstance = null;
+
+    function formatarBRL(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+    }
+
+    function executarAnalise() {
+      const select = document.getElementById('productSelect');
+      const item = MOCK_DB[select.value];
+      if (!item) return;
+
+      // Atualiza textos do produto
+      document.getElementById('prodTitle').innerText = item.nome;
+      document.getElementById('prodCategory').innerText = item.categoria;
+      document.getElementById('prodClaimedText').innerText = item.descontoAnunciado + ' Anunciado';
+
+      // Cálculos
+      const historico = item.precos;
+      const precoAtual = historico[historico.length - 1];
+      const precosPassados = historico.slice(0, -1);
+      const media = precosPassados.reduce((a, b) => a + b, 0) / precosPassados.length;
+      const min = Math.min(...historico);
+      const max = Math.max(...historico);
+      const penultimo = precosPassados[precosPassados.length - 1];
+
+      // Atualiza cards
+      document.getElementById('valCurrent').innerText = formatarBRL(precoAtual);
+      document.getElementById('valMin').innerText = formatarBRL(min);
+      document.getElementById('valAvg').innerText = formatarBRL(media);
+      document.getElementById('valMax').innerText = formatarBRL(max);
+
+      // Avaliação de Fraude e Veredito Visual
+      const verdictBox = document.getElementById('verdictBox');
+      const verdictTitle = document.getElementById('verdictTitle');
+      const verdictDesc = document.getElementById('verdictDesc');
+      const verdictIcon = document.getElementById('verdictIcon');
+
+      verdictBox.className = 'verdict-alert';
+
+      if (precoAtual <= min) {
+        // Desconto autêntico
+        verdictBox.classList.add('alert-good');
+        verdictIcon.innerHTML = '<i class="ph-fill ph-seal-check"></i>';
+        verdictTitle.innerText = 'Excelente Oportunidade: Desconto Real!';
+        verdictDesc.innerText = `Este é o menor preço registrado nos últimos 6 meses. O desconto anunciado (${item.descontoAnunciado}) é genuíno.`;
+      } else if (penultimo > media * 1.15 && precoAtual >= media * 0.95) {
+        // Metade do dobro detectado
+        verdictBox.classList.add('alert-fake');
+        verdictIcon.innerHTML = '<i class="ph-fill ph-warning-octagon"></i>';
+        verdictTitle.innerText = 'Cuidado: Golpe da "Metade do Dobro"!';
+        verdictDesc.innerText = `O produto sofreu aumento artificial semanas antes. O valor atual (${formatarBRL(precoAtual)}) é apenas o preço comum histórico.`;
+      } else {
+        // Promoção Neutra
+        verdictBox.classList.add('alert-neutral');
+        verdictIcon.innerHTML = '<i class="ph-fill ph-info"></i>';
+        verdictTitle.innerText = 'Desconto Comum / Neutro';
+        verdictDesc.innerText = `O valor está dentro da média histórica (${formatarBRL(media)}). Não há desconto extraordinário.`;
+      }
+
+      renderizarGrafico(item.datas, item.precos);
+    }
+
+    function renderizarGrafico(labels, dados) {
+      const ctx = document.getElementById('chartCanvas').getContext('2d');
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      // Gradiente suave no preenchimento
+      const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+      gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Preço Histórico',
+            data: dados,
+            borderColor: '#3b82f6',
+            borderWidth: 3,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#1d4ed8',
+            pointBorderColor: '#60a5fa',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1f2937',
+              titleColor: '#f9fafb',
+              bodyColor: '#60a5fa',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: (c) => ` Preço: ${formatarBRL(c.parsed.y)}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#6b7280',
+                callback: (v) => 'R$ ' + v
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#6b7280' }
+            }
+          }
+        }
+      });
+    }
+
+    function selecionarPorTag(chave, btn) {
+      document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('productSelect').value = chave;
+      executarAnalise();
+    }
+
+    function sincronizarTags() {
+      const val = document.getElementById('productSelect').value;
+      document.querySelectorAll('.tag-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('onclick').includes(`'${val}'`));
+      });
+      executarAnalise();
+    }
+
+    // Inicialização ao carregar
+    window.onload = () => {
+      executarAnalise();
+    };
+  </script>
+</body>
+</html>
